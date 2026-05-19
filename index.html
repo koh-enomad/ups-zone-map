@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UPS Zone Map — California 기준</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Gowun+Dodum&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --z2: #3B82F6;
+    --z3: #22C55E;
+    --z4: #EAB308;
+    --z5: #F97316;
+    --z6: #EF4444;
+    --z7: #8B5CF6;
+    --ca: #1E3A8A;
+    --bg: #0A0F1A;
+    --surface: #111827;
+    --border: rgba(255,255,255,0.08);
+    --text: #F9FAFB;
+    --muted: #6B7280;
+    --accent: #3B82F6;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Gowun Dodum', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .origin-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(30,58,138,0.4);
+    border: 1px solid rgba(59,130,246,0.3);
+    padding: 5px 12px;
+    border-radius: 6px;
+    color: #93C5FD;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .origin-dot {
+    width: 7px; height: 7px;
+    background: #3B82F6;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #3B82F6;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── MAIN ── */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    padding: 24px 0;
+    align-items: start;
+  }
+
+  /* ── MAP ── */
+  .map-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-wrap::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  #map svg { display: block; width: 100%; }
+
+  .map-loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 400px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    gap: 10px;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SIDEBAR ── */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* Zone legend list */
+  .zone-list { display: flex; flex-direction: column; gap: 6px; }
+  .zone-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .zone-item:hover, .zone-item.active {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border);
+  }
+  .zone-swatch {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .zone-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 54px;
+  }
+  .zone-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* Info card */
+  .info-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-label { color: var(--muted); font-size: 12px; }
+  .info-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .info-value.highlight { color: #60A5FA; }
+
+  /* Tooltip */
+  #tooltip {
+    position: fixed;
+    display: none;
+    background: #1F2937;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 10px 14px;
+    pointer-events: none;
+    z-index: 999;
+    min-width: 140px;
+    backdrop-filter: blur(4px);
+  }
+  .tt-state {
+    font-size: 13px; font-weight: 500; color: #F9FAFB;
+    margin-bottom: 4px;
+  }
+  .tt-zone {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink:0; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; }
+    .sidebar .card { flex: 1 1 260px; }
+  }
+  @media (max-width: 600px) {
+    .header-right { display: none; }
+    .logo { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="logo">UPS<span>ZONE</span></div>
+      <div class="header-tag">CA Origin</div>
+    </div>
+    <div class="header-right">
+      <div class="origin-badge">
+        <span class="origin-dot"></span>
+        ORIGIN · CALIFORNIA
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- MAP -->
+    <div class="map-wrap">
+      <div id="map">
+        <div class="map-loading">
+          <div class="spinner"></div>
+          지도 로딩 중...
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- Legend -->
+      <div class="card">
+        <div class="card-title">Zone 범례</div>
+        <div class="zone-list" id="legend"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-title">기준 정보</div>
+        <div class="info-row">
+          <span class="info-label">출발지</span>
+          <span class="info-value highlight">California</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">운송사</span>
+          <span class="info-value">UPS Ground</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Zone 범위</span>
+          <span class="info-value">2 – 7</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">대상 주</span>
+          <span class="info-value">50개 주</span>
+        </div>
+      </div>
+
+      <!-- Selected state info -->
+      <div class="card" id="selected-card" style="display:none;">
+        <div class="card-title">선택된 주</div>
+        <div class="info-row">
+          <span class="info-label">주 이름</span>
+          <span class="info-value" id="sel-name">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Zone</span>
+          <span class="info-value highlight" id="sel-zone">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">구간</span>
+          <span class="info-value" id="sel-region">—</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>이노마드 UPS 요율 기준 · CA 출발 기준 Zone 분류</span>
+    <span>UPS Ground Saver 참고용</span>
+  </footer>
+
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip">
+  <div class="tt-state" id="tt-state"></div>
+  <div class="tt-zone">
+    <span class="tt-dot" id="tt-dot"></span>
+    <span id="tt-zone-text"></span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+const zoneData = {
+  'California': 'origin',
+  'Oregon': 2, 'Nevada': 2,
+  'Washington': 3, 'Arizona': 3, 'Idaho': 3, 'Utah': 3,
+  'Montana': 4, 'Wyoming': 4, 'Colorado': 4, 'New Mexico': 4, 'Hawaii': 4,
+  'North Dakota': 5, 'South Dakota': 5, 'Nebraska': 5, 'Kansas': 5,
+  'Oklahoma': 5, 'Texas': 5, 'Minnesota': 5, 'Iowa': 5,
+  'Missouri': 5, 'Arkansas': 5, 'Louisiana': 5, 'Wisconsin': 5, 'Alaska': 5,
+  'Illinois': 6, 'Michigan': 6, 'Indiana': 6, 'Ohio': 6,
+  'Mississippi': 6, 'Tennessee': 6, 'Kentucky': 6, 'Alabama': 6,
+  'Georgia': 7, 'Florida': 7, 'South Carolina': 7, 'North Carolina': 7,
+  'Virginia': 7, 'West Virginia': 7, 'Pennsylvania': 7, 'New York': 7,
+  'New Jersey': 7, 'Delaware': 7, 'Maryland': 7, 'Connecticut': 7,
+  'Rhode Island': 7, 'Massachusetts': 7, 'Vermont': 7, 'New Hampshire': 7,
+  'Maine': 7
+};
+
+const zoneInfo = {
+  2: { color: '#3B82F6', label: 'Zone 2', region: 'CA 인접 (OR, NV)' },
+  3: { color: '#22C55E', label: 'Zone 3', region: '서부권 (WA, AZ, ID, UT)' },
+  4: { color: '#EAB308', label: 'Zone 4', region: '로키 산맥 (MT, CO, NM...)' },
+  5: { color: '#F97316', label: 'Zone 5', region: '중부 (TX, MN, MO...)' },
+  6: { color: '#EF4444', label: 'Zone 6', region: '중동부 (IL, OH, MI...)' },
+  7: { color: '#8B5CF6', label: 'Zone 7', region: '동부 전역 (NY, FL, GA...)' },
+};
+
+// Build legend
+const legendEl = document.getElementById('legend');
+// CA origin item
+const caItem = document.createElement('div');
+caItem.className = 'zone-item';
+caItem.innerHTML = `<span class="zone-swatch" style="background:#1E3A8A;box-shadow:0 0 6px rgba(59,130,246,0.5)"></span>
+  <span class="zone-number">출발지</span>
+  <span class="zone-desc">California</span>`;
+legendEl.appendChild(caItem);
+
+Object.entries(zoneInfo).forEach(([z, info]) => {
+  const item = document.createElement('div');
+  item.className = 'zone-item';
+  item.id = `legend-z${z}`;
+  item.innerHTML = `<span class="zone-swatch" style="background:${info.color}"></span>
+    <span class="zone-number">${info.label}</span>
+    <span class="zone-desc">${info.region}</span>`;
+  item.addEventListener('click', () => highlightZone(parseInt(z)));
+  legendEl.appendChild(item);
+});
+
+const tooltip = document.getElementById('tooltip');
+let activeZone = null;
+
+function highlightZone(zone) {
+  if (activeZone === zone) {
+    activeZone = null;
+    d3.selectAll('path.state').attr('opacity', 1);
+    document.querySelectorAll('.zone-item').forEach(el => el.classList.remove('active'));
+  } else {
+    activeZone = zone;
+    d3.selectAll('path.state').attr('opacity', d => {
+      const v = zoneData[d.properties.name];
+      return v === zone ? 1 : 0.2;
+    });
+    document.querySelectorAll('.zone-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(`legend-z${zone}`)?.classList.add('active');
+  }
+}
+
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => {
+  document.getElementById('map').innerHTML = '';
+
+  const container = document.getElementById('map');
+  const svg = d3.select('#map').append('svg')
+    .attr('viewBox', '0 0 960 600')
+    .attr('width', '100%');
+
+  // Subtle glow defs
+  const defs = svg.append('defs');
+  const filter = defs.append('filter').attr('id', 'glow').attr('x', '-20%').attr('y', '-20%').attr('width', '140%').attr('height', '140%');
+  filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'blur');
+  const feMerge = filter.append('feMerge');
+  feMerge.append('feMergeNode').attr('in', 'blur');
+  feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+  const projection = d3.geoAlbersUsa().scale(1160).translate([480, 295]);
+  const path = d3.geoPath(projection);
+  const features = topojson.feature(us, us.objects.states).features;
+
+  function getFill(name) {
+    if (name === 'California') return '#1E3A8A';
+    const z = zoneData[name];
+    if (!z || z === 'origin') return '#1F2937';
+    return zoneInfo[z]?.color || '#1F2937';
+  }
+
+  svg.selectAll('path.state')
+    .data(features)
+    .join('path')
+    .attr('class', 'state')
+    .attr('d', path)
+    .attr('fill', d => getFill(d.properties.name))
+    .attr('fill-opacity', d => d.properties.name === 'California' ? 1 : 0.75)
+    .attr('stroke', '#0A0F1A')
+    .attr('stroke-width', 0.8)
+    .style('cursor', 'pointer')
+    .style('transition', 'fill-opacity 0.2s, opacity 0.2s')
+    .on('mousemove', function(event, d) {
+      const name = d.properties.name;
+      const z = zoneData[name];
+
+      d3.select(this).attr('fill-opacity', 1);
+
+      tooltip.style.display = 'block';
+      const tx = event.clientX + 14;
+      const ty = event.clientY - 10;
+      tooltip.style.left = Math.min(tx, window.innerWidth - 180) + 'px';
+      tooltip.style.top = Math.max(ty, 10) + 'px';
+
+      document.getElementById('tt-state').textContent = name;
+
+      if (name === 'California') {
+        document.getElementById('tt-dot').style.background = '#3B82F6';
+        document.getElementById('tt-zone-text').textContent = '출발지 (Origin)';
+      } else if (z && zoneInfo[z]) {
+        document.getElementById('tt-dot').style.background = zoneInfo[z].color;
+        document.getElementById('tt-zone-text').textContent = `Zone ${z} · ${zoneInfo[z].region}`;
+      } else {
+        document.getElementById('tt-dot').style.background = '#4B5563';
+        document.getElementById('tt-zone-text').textContent = 'Zone 정보 없음';
+      }
+    })
+    .on('mouseleave', function(event, d) {
+      const name = d.properties.name;
+      const opacity = activeZone
+        ? (zoneData[name] === activeZone ? 1 : 0.2)
+        : (name === 'California' ? 1 : 0.75);
+      d3.select(this).attr('fill-opacity', opacity);
+      tooltip.style.display = 'none';
+    })
+    .on('click', function(event, d) {
+      const name = d.properties.name;
+      const z = zoneData[name];
+      const card = document.getElementById('selected-card');
+
+      if (name === 'California') {
+        document.getElementById('sel-name').textContent = 'California';
+        document.getElementById('sel-zone').textContent = '출발지';
+        document.getElementById('sel-region').textContent = 'Origin';
+      } else if (z && zoneInfo[z]) {
+        document.getElementById('sel-name').textContent = name;
+        document.getElementById('sel-zone').textContent = `Zone ${z}`;
+        document.getElementById('sel-region').textContent = zoneInfo[z].region;
+      } else {
+        document.getElementById('sel-name').textContent = name;
+        document.getElementById('sel-zone').textContent = '—';
+        document.getElementById('sel-region').textContent = '—';
+      }
+      card.style.display = 'block';
+    });
+
+  // State labels (zone numbers)
+  features.forEach(f => {
+    const name = f.properties.name;
+    const z = zoneData[name];
+    const [cx, cy] = path.centroid(f);
+    if (!cx || !cy || isNaN(cx) || isNaN(cy)) return;
+
+    if (name === 'California') {
+      svg.append('text')
+        .attr('x', cx).attr('y', cy - 6)
+        .attr('text-anchor', 'middle')
+        .attr('font-family', 'DM Mono, monospace')
+        .attr('font-size', '11px').attr('font-weight', '500')
+        .attr('fill', 'rgba(255,255,255,0.9)').attr('pointer-events', 'none')
+        .text('CA');
+      svg.append('text')
+        .attr('x', cx).attr('y', cy + 8)
+        .attr('text-anchor', 'middle')
+        .attr('font-family', 'Gowun Dodum, sans-serif')
+        .attr('font-size', '9px')
+        .attr('fill', 'rgba(147,197,253,0.8)').attr('pointer-events', 'none')
+        .text('출발지');
+    } else if (z && z !== 'origin') {
+      svg.append('text')
+        .attr('x', cx).attr('y', cy + 4)
+        .attr('text-anchor', 'middle')
+        .attr('font-family', 'DM Mono, monospace')
+        .attr('font-size', '10px').attr('font-weight', '400')
+        .attr('fill', 'rgba(255,255,255,0.5)').attr('pointer-events', 'none')
+        .text(z);
+    }
+  });
+
+}).catch(() => {
+  document.getElementById('map').innerHTML =
+    '<div class="map-loading">지도 데이터를 불러올 수 없습니다. 인터넷 연결을 확인해주세요.</div>';
+});
+</script>
+</body>
+</html>
