@@ -3,570 +3,397 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UPS Zone Map — California 기준</title>
+<title>이노마드 UPS Zone Map & 운임 계산기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Gowun+Dodum&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#FF5C00;--brand-lt:#FFF0E8;--brand-md:#FFD4BC;
+  --z2:#2563EB;--z3:#16A34A;--z4:#D97706;--z5:#EA580C;--z6:#DC2626;--z7:#7C3AED;--z8:#0891B2;
+  --ca:#1D4ED8;
+  --bg:#F8F7F4;--surface:#FFFFFF;--surface2:#F3F2EE;
+  --border:#E5E3DC;--border2:#D1CFCA;
+  --text:#1A1916;--text2:#6B6860;--text3:#9A9892;
+  --radius:12px;--radius-sm:8px;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.page{max-width:1400px;margin:0 auto;padding:0 28px 60px}
 
-  :root {
-    --z2: #3B82F6;
-    --z3: #22C55E;
-    --z4: #EAB308;
-    --z5: #F97316;
-    --z6: #EF4444;
-    --z7: #8B5CF6;
-    --ca: #1E3A8A;
-    --bg: #0A0F1A;
-    --surface: #111827;
-    --border: rgba(255,255,255,0.08);
-    --text: #F9FAFB;
-    --muted: #6B7280;
-    --accent: #3B82F6;
-  }
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:22px 0 18px;border-bottom:1.5px solid var(--border);gap:16px;flex-wrap:wrap}
+.hd-left{display:flex;align-items:center;gap:14px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;background:var(--brand);border-radius:9px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:20px;height:20px;fill:#fff}
+.logo-text{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.logo-text span{color:var(--brand)}
+.hd-div{width:1px;height:20px;background:var(--border2)}
+.hd-sub{font-size:13px;color:var(--text2)}
+.origin-badge{display:flex;align-items:center;gap:7px;background:#EFF6FF;border:1.5px solid #BFDBFE;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;color:var(--ca)}
+.origin-dot{width:7px;height:7px;background:var(--ca);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Gowun Dodum', sans-serif;
-    overflow-x: hidden;
-  }
+/* MAP LAYOUT */
+.map-section{display:grid;grid-template-columns:1fr 268px;gap:20px;padding:22px 0 0;align-items:start}
+.map-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-lbl{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px}
+#map svg{display:block;width:100%}
+.map-loading{display:flex;align-items:center;justify-content:center;height:360px;color:var(--text3);font-size:13px;gap:10px}
+.spinner{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  /* Grid noise overlay */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px}
+.zone-list{display:flex;flex-direction:column;gap:3px}
+.zone-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);border:1.5px solid transparent;cursor:pointer;transition:all .13s}
+.zone-item:hover,.zone-item.active{background:var(--surface2);border-color:var(--border)}
+.zone-swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.zone-lbl{font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500;color:var(--text);min-width:50px}
+.zone-desc{font-size:11px;color:var(--text2);line-height:1.3}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none;padding-bottom:0}
+.info-lbl{color:var(--text2);font-size:12px}
+.info-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.info-val.blue{color:var(--ca)}
 
-  .page {
-    position: relative; z-index: 1;
-    min-height: 100vh;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+/* CALCULATOR */
+.calc-section{margin-top:24px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.calc-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1.5px solid var(--border);background:var(--surface2);gap:12px;flex-wrap:wrap}
+.calc-title-wrap{display:flex;align-items:center;gap:10px}
+.calc-icon{width:32px;height:32px;background:var(--brand-lt);border:1.5px solid var(--brand-md);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.calc-title{font-size:15px;font-weight:700}
+.calc-sub{font-size:12px;color:var(--text2);margin-top:1px}
 
-  /* ── HEADER ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 28px 0 20px;
-    border-bottom: 1px solid var(--border);
-    gap: 16px;
-  }
+/* Service toggle */
+.svc-toggle{display:flex;border:1.5px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0}
+.svc-btn{padding:7px 14px;font-size:12px;font-weight:600;font-family:'Pretendard',sans-serif;border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .13s;white-space:nowrap}
+.svc-btn.active{background:var(--brand);color:#fff}
+.svc-btn:not(.active):hover{background:var(--surface2)}
 
-  .header-left { display: flex; align-items: baseline; gap: 16px; }
+.add-row-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;transition:background .13s,transform .1s;font-family:'Pretendard',sans-serif;flex-shrink:0}
+.add-row-btn:hover{background:#E05000}
+.add-row-btn:active{transform:scale(.97)}
+.add-row-btn svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round}
 
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 3px;
-    color: var(--text);
-    line-height: 1;
-  }
-  .logo span { color: var(--accent); }
+.calc-table-wrap{overflow-x:auto}
+table.ct{width:100%;border-collapse:collapse;font-size:13px}
+table.ct th{padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;background:#FAFAF8;border-bottom:1.5px solid var(--border);white-space:nowrap}
+table.ct th.r{text-align:right}
+table.ct td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.ct tbody tr:last-child td{border-bottom:none}
+table.ct tbody tr:hover td{background:#FAFAF8}
+.ti{width:100%;padding:7px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:13px;font-family:'Pretendard',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .13s,box-shadow .13s;-moz-appearance:textfield}
+.ti::-webkit-inner-spin-button,.ti::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.ti:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(255,92,0,.1)}
+.ts{width:100%;padding:7px 28px 7px 10px;border:1.5px solid var(--border2);border-radius:7px;font-size:13px;font-family:'Pretendard',sans-serif;color:var(--text);background:var(--surface);cursor:pointer;outline:none;transition:border-color .13s,box-shadow .13s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%239A9892' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.ts:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(255,92,0,.1)}
+.cn{width:38px;text-align:center}
+.cd{min-width:130px}
+.cw{width:100px}
+.cz{width:110px}
+.cq{width:80px}
+.cr{width:100px}
+.cs{width:110px}
+.cx{width:38px;text-align:center}
+.rate-d{font-family:'DM Mono',monospace;font-size:13px;color:var(--text2);text-align:right}
+.rate-na{color:var(--text3)}
+.sub-d{font-family:'DM Mono',monospace;font-size:13.5px;font-weight:600;text-align:right}
+.del-btn{width:27px;height:27px;border:1.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;margin:0 auto;padding:0}
+.del-btn:hover{border-color:#FCA5A5;background:#FEF2F2;color:#DC2626}
+.del-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.empty-row{text-align:center;padding:32px 16px;color:var(--text3);font-size:13px}
 
-  .header-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-  }
+/* CALC FOOTER */
+.calc-ft{padding:18px 22px;background:var(--surface2);border-top:1.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.notice{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--text3);line-height:1.55;max-width:520px}
+.ni{width:14px;height:14px;flex-shrink:0;margin-top:1px;color:var(--text3)}
+.total-wrap{text-align:right;flex-shrink:0}
+.total-lbl{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.total-amt{font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:var(--brand);letter-spacing:-.5px;line-height:1}
+.total-meta{font-size:11.5px;color:var(--text3);margin-top:4px}
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .origin-badge {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(30,58,138,0.4);
-    border: 1px solid rgba(59,130,246,0.3);
-    padding: 5px 12px;
-    border-radius: 6px;
-    color: #93C5FD;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-  }
-  .origin-dot {
-    width: 7px; height: 7px;
-    background: #3B82F6;
-    border-radius: 50%;
-    box-shadow: 0 0 6px #3B82F6;
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+/* TOOLTIP */
+#tt{position:fixed;display:none;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;padding:9px 13px;pointer-events:none;z-index:999;min-width:155px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.tt-state{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:3px}
+.tt-zone{font-size:11.5px;display:flex;align-items:center;gap:5px;color:var(--text2)}
+.tt-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
-  /* ── MAIN ── */
-  main {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 24px;
-    padding: 24px 0;
-    align-items: start;
-  }
+footer{border-top:1.5px solid var(--border);margin-top:28px;padding:16px 0;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--text3);gap:12px;flex-wrap:wrap}
 
-  /* ── MAP ── */
-  .map-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-  .map-wrap::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.04) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  #map svg { display: block; width: 100%; }
-
-  .map-loading {
-    display: flex; align-items: center; justify-content: center;
-    height: 400px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    gap: 10px;
-  }
-  .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── SIDEBAR ── */
-  .sidebar { display: flex; flex-direction: column; gap: 16px; }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-  }
-
-  .card-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 14px;
-  }
-
-  /* Zone legend list */
-  .zone-list { display: flex; flex-direction: column; gap: 6px; }
-  .zone-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .zone-item:hover, .zone-item.active {
-    background: rgba(255,255,255,0.04);
-    border-color: var(--border);
-  }
-  .zone-swatch {
-    width: 10px; height: 10px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-  .zone-number {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    min-width: 54px;
-  }
-  .zone-desc {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-
-  /* Info card */
-  .info-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .info-label { color: var(--muted); font-size: 12px; }
-  .info-value {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    color: var(--text);
-  }
-  .info-value.highlight { color: #60A5FA; }
-
-  /* Tooltip */
-  #tooltip {
-    position: fixed;
-    display: none;
-    background: #1F2937;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 8px;
-    padding: 10px 14px;
-    pointer-events: none;
-    z-index: 999;
-    min-width: 140px;
-    backdrop-filter: blur(4px);
-  }
-  .tt-state {
-    font-size: 13px; font-weight: 500; color: #F9FAFB;
-    margin-bottom: 4px;
-  }
-  .tt-zone {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .tt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink:0; }
-
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 16px 0;
-    display: flex; align-items: center; justify-content: space-between;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
-  footer a { color: var(--muted); text-decoration: none; }
-  footer a:hover { color: var(--text); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; }
-    .sidebar { flex-direction: row; flex-wrap: wrap; }
-    .sidebar .card { flex: 1 1 260px; }
-  }
-  @media (max-width: 600px) {
-    .header-right { display: none; }
-    .logo { font-size: 22px; }
-  }
+@media(max-width:920px){.map-section{grid-template-columns:1fr}}
+@media(max-width:600px){.page{padding:0 14px 40px};header{flex-wrap:wrap};.hd-div,.hd-sub{display:none};.calc-ft{flex-direction:column;align-items:flex-start};.total-wrap{text-align:left}}
 </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HEADER -->
-  <header>
-    <div class="header-left">
-      <div class="logo">UPS<span>ZONE</span></div>
-      <div class="header-tag">CA Origin</div>
+<header>
+  <div class="hd-left">
+    <div class="logo-wrap">
+      <div class="logo-icon"><svg viewBox="0 0 20 20"><path d="M10 2L3 7v11h5v-5h4v5h5V7L10 2z"/></svg></div>
+      <div class="logo-text">이노마드 <span>UPS</span></div>
     </div>
-    <div class="header-right">
-      <div class="origin-badge">
-        <span class="origin-dot"></span>
-        ORIGIN · CALIFORNIA
-      </div>
+    <div class="hd-div"></div>
+    <div class="hd-sub">Zone Map &amp; 운임 계산기</div>
+  </div>
+  <div class="origin-badge"><span class="origin-dot"></span>발송지 · California</div>
+</header>
+
+<div class="map-section">
+  <div class="map-card">
+    <div class="card-hd">
+      <span class="sec-lbl">UPS Zone Map — CA 기준</span>
+      <span style="font-size:11px;color:var(--text3)">주를 클릭하면 Zone 정보 확인</span>
     </div>
-  </header>
-
-  <!-- MAIN -->
-  <main>
-    <!-- MAP -->
-    <div class="map-wrap">
-      <div id="map">
-        <div class="map-loading">
-          <div class="spinner"></div>
-          지도 로딩 중...
-        </div>
-      </div>
+    <div id="map"><div class="map-loading"><div class="spinner"></div>지도 로딩 중...</div></div>
+  </div>
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Zone 범례</div>
+      <div class="zone-list" id="legend"></div>
     </div>
-
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-
-      <!-- Legend -->
-      <div class="card">
-        <div class="card-title">Zone 범례</div>
-        <div class="zone-list" id="legend"></div>
-      </div>
-
-      <!-- Stats -->
-      <div class="card">
-        <div class="card-title">기준 정보</div>
-        <div class="info-row">
-          <span class="info-label">출발지</span>
-          <span class="info-value highlight">California</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">운송사</span>
-          <span class="info-value">UPS Ground</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Zone 범위</span>
-          <span class="info-value">2 – 7</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">대상 주</span>
-          <span class="info-value">50개 주</span>
-        </div>
-      </div>
-
-      <!-- Selected state info -->
-      <div class="card" id="selected-card" style="display:none;">
-        <div class="card-title">선택된 주</div>
-        <div class="info-row">
-          <span class="info-label">주 이름</span>
-          <span class="info-value" id="sel-name">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Zone</span>
-          <span class="info-value highlight" id="sel-zone">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">구간</span>
-          <span class="info-value" id="sel-region">—</span>
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-title">기준 정보</div>
+      <div class="info-row"><span class="info-lbl">출발지</span><span class="info-val blue">California</span></div>
+      <div class="info-row"><span class="info-lbl">서비스</span><span class="info-val" id="svc-info">Ground Residential</span></div>
+      <div class="info-row"><span class="info-lbl">Zone 범위</span><span class="info-val">Zone 2 – 8</span></div>
 
     </div>
-  </main>
-
-  <!-- FOOTER -->
-  <footer>
-    <span>이노마드 UPS 요율 기준 · CA 출발 기준 Zone 분류</span>
-    <span>UPS Ground Saver 참고용</span>
-  </footer>
-
+    <div class="card" id="sel-card" style="display:none">
+      <div class="card-title">선택된 주</div>
+      <div class="info-row"><span class="info-lbl">주</span><span class="info-val" id="sel-name">—</span></div>
+      <div class="info-row"><span class="info-lbl">Zone</span><span class="info-val blue" id="sel-zone">—</span></div>
+      <div class="info-row"><span class="info-lbl">지역</span><span class="info-val" id="sel-region">—</span></div>
+    </div>
+  </div>
 </div>
 
-<!-- Tooltip -->
-<div id="tooltip">
-  <div class="tt-state" id="tt-state"></div>
-  <div class="tt-zone">
-    <span class="tt-dot" id="tt-dot"></span>
-    <span id="tt-zone-text"></span>
+<!-- CALCULATOR -->
+<div class="calc-section">
+  <div class="calc-hd">
+    <div class="calc-title-wrap">
+      <div class="calc-icon">📦</div>
+      <div>
+        <div class="calc-title">UPS 운임 계산기</div>
+        <div class="calc-sub">중량·존·수량을 입력하면 예상 운임이 자동으로 계산됩니다</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="svc-toggle">
+        <button class="svc-btn" id="btn-resi" onclick="setSvc('residential')">🏠 Ground Residential</button>
+        <button class="svc-btn" id="btn-comm" onclick="setSvc('commercial')">🏢 Ground Commercial</button>
+      </div>
+      <button class="add-row-btn" onclick="addRow()">
+        <svg viewBox="0 0 13 13"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg>행 추가
+      </button>
+    </div>
   </div>
+  <div class="calc-table-wrap">
+    <table class="ct">
+      <thead>
+        <tr>
+          <th class="cn">#</th>
+          <th class="cd">품목 설명</th>
+          <th class="cw">중량 (lbs)</th>
+          <th class="cz">Zone</th>
+          <th class="cq">수량</th>
+          <th class="cr r">단가 (USD)</th>
+          <th class="cs r">소계 (USD)</th>
+          <th class="cx"></th>
+        </tr>
+      </thead>
+      <tbody id="calc-body"></tbody>
+    </table>
+  </div>
+  <div class="calc-ft">
+    <div class="notice">
+      <svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="8" cy="8" r="6.5"/><line x1="8" y1="7.5" x2="8" y2="11"/><circle cx="8" cy="5.5" r=".65" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>* 해당 견적은 예상치로 실제 진행 시 차이가 발생할 수 있습니다.<br>연료할증료·부가서비스·주소보정 수수료 등은 별도 적용될 수 있습니다.</span>
+    </div>
+    <div class="total-wrap">
+      <div class="total-lbl">예상 총액</div>
+      <div class="total-amt" id="grand-total">$0.00</div>
+      <div class="total-meta" id="total-meta">0개 항목</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>이노마드 UPS Ground Commercial/Residential · CA 출발 기준</span>
+  <span>참고용 견적</span>
+</footer>
+</div>
+
+<div id="tt">
+  <div class="tt-state" id="tt-state"></div>
+  <div class="tt-zone"><span class="tt-dot" id="tt-dot"></span><span id="tt-zt"></span></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <script>
-const zoneData = {
-  'California': 'origin',
-  'Oregon': 2, 'Nevada': 2,
-  'Washington': 3, 'Arizona': 3, 'Idaho': 3, 'Utah': 3,
-  'Montana': 4, 'Wyoming': 4, 'Colorado': 4, 'New Mexico': 4, 'Hawaii': 4,
-  'North Dakota': 5, 'South Dakota': 5, 'Nebraska': 5, 'Kansas': 5,
-  'Oklahoma': 5, 'Texas': 5, 'Minnesota': 5, 'Iowa': 5,
-  'Missouri': 5, 'Arkansas': 5, 'Louisiana': 5, 'Wisconsin': 5, 'Alaska': 5,
-  'Illinois': 6, 'Michigan': 6, 'Indiana': 6, 'Ohio': 6,
-  'Mississippi': 6, 'Tennessee': 6, 'Kentucky': 6, 'Alabama': 6,
-  'Georgia': 7, 'Florida': 7, 'South Carolina': 7, 'North Carolina': 7,
-  'Virginia': 7, 'West Virginia': 7, 'Pennsylvania': 7, 'New York': 7,
-  'New Jersey': 7, 'Delaware': 7, 'Maryland': 7, 'Connecticut': 7,
-  'Rhode Island': 7, 'Massachusetts': 7, 'Vermont': 7, 'New Hampshire': 7,
-  'Maine': 7
+const RATES_COMMERCIAL = {"1":{"2":11.11,"3":11.11,"4":11.11,"5":11.11,"6":11.11,"7":11.11,"8":11.11},"2":{"2":11.11,"3":11.11,"4":11.11,"5":11.11,"6":11.11,"7":11.48,"8":11.67},"3":{"2":11.11,"3":11.11,"4":11.11,"5":11.4,"6":11.85,"7":12.24,"8":12.86},"4":{"2":11.11,"3":11.11,"4":11.28,"5":12.02,"6":12.35,"7":13.14,"8":13.78},"5":{"2":11.11,"3":11.11,"4":11.57,"5":12.55,"6":13.06,"7":13.77,"8":14.59},"6":{"2":11.11,"3":11.11,"4":11.19,"5":12.08,"6":12.52,"7":13.2,"8":13.99},"7":{"2":11.11,"3":11.11,"4":11.48,"5":12.46,"6":12.75,"7":13.55,"8":14.51},"8":{"2":11.11,"3":11.11,"4":11.89,"5":12.83,"6":13.27,"7":14.1,"8":15.15},"9":{"2":11.11,"3":11.11,"4":11.94,"5":12.93,"6":13.55,"7":14.69,"8":15.96},"10":{"2":11.11,"3":11.11,"4":12.06,"5":13.24,"6":13.71,"7":15.38,"8":17.0},"11":{"2":11.11,"3":11.11,"4":11.68,"5":12.71,"6":13.44,"7":15.82,"8":17.18},"12":{"2":11.11,"3":11.12,"4":11.79,"5":12.85,"6":13.92,"7":16.46,"8":17.99},"13":{"2":11.11,"3":11.17,"4":11.94,"5":13.09,"6":14.34,"7":17.51,"8":18.86},"14":{"2":11.11,"3":11.46,"4":12.06,"5":13.41,"6":15.18,"7":18.7,"8":20.41},"15":{"2":11.11,"3":11.7,"4":12.22,"5":13.89,"6":16.03,"7":19.29,"8":21.36},"16":{"2":11.13,"3":12.04,"4":12.44,"5":14.14,"6":16.53,"7":20.31,"8":22.3},"17":{"2":11.2,"3":12.29,"4":12.57,"5":14.53,"6":17.24,"7":21.34,"8":22.43},"18":{"2":11.32,"3":12.47,"4":12.72,"5":15.22,"6":18.14,"7":21.98,"8":24.18},"19":{"2":11.59,"3":13.05,"4":13.35,"5":15.9,"6":18.6,"7":22.58,"8":25.17},"20":{"2":11.69,"3":13.14,"4":13.43,"5":16.51,"6":19.25,"7":23.41,"8":26.27},"21":{"2":11.37,"3":12.84,"4":13.28,"5":15.71,"6":18.78,"7":22.77,"8":25.42},"22":{"2":11.42,"3":12.96,"4":13.65,"5":16.25,"6":19.54,"7":23.6,"8":26.53},"23":{"2":11.46,"3":13.21,"4":14.05,"5":16.54,"6":20.27,"7":24.17,"8":27.59},"24":{"2":11.77,"3":13.74,"4":14.67,"5":17.42,"6":21.24,"7":24.98,"8":29.17},"25":{"2":11.81,"3":13.79,"4":14.73,"5":17.64,"6":21.85,"7":26.36,"8":30.07},"26":{"2":12.38,"3":14.27,"4":15.36,"5":18.36,"6":22.65,"7":27.43,"8":31.31},"27":{"2":12.73,"3":14.61,"4":15.66,"5":18.67,"6":23.56,"7":27.94,"8":31.83},"28":{"2":13.02,"3":14.96,"4":16.39,"5":19.88,"6":24.71,"7":29.21,"8":33.06},"29":{"2":13.06,"3":15.25,"4":16.63,"5":19.9,"6":25.42,"7":29.85,"8":33.94},"30":{"2":13.27,"3":15.62,"4":17.27,"5":20.69,"6":25.83,"7":30.01,"8":35.34},"31":{"2":12.88,"3":14.95,"4":16.4,"5":19.49,"6":24.74,"7":29.12,"8":34.12},"32":{"2":12.88,"3":14.96,"4":16.41,"5":19.5,"6":24.87,"7":29.13,"8":34.5},"33":{"2":12.97,"3":15.18,"4":17.15,"5":20.43,"6":26.3,"7":30.09,"8":35.43},"34":{"2":13.05,"3":15.52,"4":17.7,"5":21.13,"6":26.44,"7":30.98,"8":37.12},"35":{"2":13.29,"3":16.34,"4":18.27,"5":21.65,"6":26.9,"7":31.78,"8":37.39},"36":{"2":13.49,"3":16.35,"4":18.43,"5":22.3,"6":28.02,"7":32.86,"8":38.86},"37":{"2":13.68,"3":16.56,"4":18.71,"5":22.79,"6":28.15,"7":33.92,"8":39.24},"38":{"2":13.88,"3":16.82,"4":19.21,"5":23.34,"6":28.78,"7":34.06,"8":39.97},"39":{"2":14.36,"3":17.47,"4":20.02,"5":23.94,"6":29.92,"7":35.4,"8":40.8},"40":{"2":14.37,"3":17.55,"4":20.03,"5":23.98,"6":30.14,"7":35.4,"8":40.8},"41":{"2":14.7,"3":18.29,"4":20.61,"5":24.79,"6":31.21,"7":36.49,"8":42.35},"42":{"2":14.7,"3":18.35,"4":21.41,"5":24.87,"6":31.53,"7":37.11,"8":42.56},"43":{"2":14.97,"3":18.62,"4":21.44,"5":26.14,"6":33.06,"7":38.46,"8":43.71},"44":{"2":15.19,"3":18.9,"4":21.99,"5":26.6,"6":33.33,"7":39.45,"8":44.18},"45":{"2":15.2,"3":18.91,"4":22.0,"5":26.61,"6":33.44,"7":40.44,"8":44.48},"46":{"2":15.69,"3":19.11,"4":22.7,"5":27.26,"6":34.32,"7":40.87,"8":45.66},"47":{"2":15.75,"3":19.54,"4":23.08,"5":27.46,"6":34.78,"7":41.67,"8":46.4},"48":{"2":15.75,"3":19.67,"4":23.3,"5":28.29,"6":35.3,"7":42.04,"8":47.14},"49":{"2":15.77,"3":19.68,"4":23.34,"5":28.31,"6":35.56,"7":42.89,"8":47.41},"50":{"2":15.79,"3":19.69,"4":23.35,"5":28.34,"6":35.57,"7":42.9,"8":47.67},"51":{"2":15.82,"3":19.7,"4":23.41,"5":28.39,"6":35.75,"7":43.11,"8":48.42},"52":{"2":15.83,"3":19.71,"4":23.44,"5":28.4,"6":35.76,"7":43.12,"8":48.42},"53":{"2":15.83,"3":19.76,"4":23.44,"5":28.58,"6":35.76,"7":43.13,"8":48.9},"54":{"2":15.84,"3":19.79,"4":23.49,"5":28.63,"6":35.77,"7":43.13,"8":48.93},"55":{"2":15.84,"3":19.81,"4":23.49,"5":28.77,"6":35.82,"7":43.14,"8":48.97},"56":{"2":15.84,"3":19.83,"4":23.52,"5":28.77,"6":35.84,"7":43.18,"8":49.52},"57":{"2":16.14,"3":19.92,"4":23.55,"5":29.63,"6":35.86,"7":43.22,"8":50.03},"58":{"2":16.15,"3":19.93,"4":23.56,"5":29.66,"6":35.87,"7":43.25,"8":50.46},"59":{"2":16.19,"3":19.93,"4":23.73,"5":29.67,"6":36.06,"7":43.27,"8":51.29},"60":{"2":16.6,"3":20.71,"4":24.13,"5":30.7,"6":36.73,"7":43.32,"8":51.61},"61":{"2":16.61,"3":20.77,"4":24.32,"5":30.79,"6":36.74,"7":43.33,"8":51.93},"62":{"2":17.29,"3":22.24,"4":24.77,"5":31.67,"6":37.3,"7":44.0,"8":52.25},"63":{"2":17.29,"3":22.25,"4":25.0,"5":31.69,"6":37.57,"7":44.36,"8":52.57},"64":{"2":17.75,"3":22.26,"4":25.41,"5":31.7,"6":37.83,"7":44.36,"8":52.89},"65":{"2":17.95,"3":22.86,"4":25.41,"5":31.74,"6":38.15,"7":44.47,"8":52.98},"66":{"2":18.03,"3":23.08,"4":25.42,"5":31.74,"6":38.17,"7":44.61,"8":53.21},"67":{"2":18.04,"3":23.12,"4":25.43,"5":31.79,"6":38.48,"7":44.83,"8":53.74},"68":{"2":18.24,"3":23.52,"4":26.96,"5":32.46,"6":39.04,"7":45.51,"8":53.76},"69":{"2":18.62,"3":23.75,"4":27.17,"5":32.71,"6":39.25,"7":45.54,"8":53.99},"70":{"2":18.71,"3":24.08,"4":27.75,"5":34.11,"6":40.04,"7":45.58,"8":54.45},"71":{"2":18.76,"3":24.12,"4":28.24,"5":34.29,"6":40.37,"7":46.33,"8":54.57},"72":{"2":19.29,"3":24.12,"4":28.83,"5":34.3,"6":41.04,"7":48.32,"8":54.66},"73":{"2":19.41,"3":24.35,"4":28.83,"5":34.8,"6":41.44,"7":48.33,"8":54.66},"74":{"2":19.93,"3":24.37,"4":28.84,"5":34.81,"6":42.12,"7":48.41,"8":54.66},"75":{"2":20.68,"3":24.4,"4":28.85,"5":35.12,"6":42.13,"7":48.9,"8":54.67},"76":{"2":22.28,"3":25.76,"4":29.04,"5":35.66,"6":43.05,"7":49.7,"8":55.21},"77":{"2":23.14,"3":26.14,"4":29.38,"5":35.83,"6":43.31,"7":51.11,"8":55.24},"78":{"2":23.18,"3":27.12,"4":30.25,"5":36.2,"6":43.58,"7":51.48,"8":55.24},"79":{"2":24.21,"3":28.23,"4":30.98,"5":36.77,"6":44.48,"7":52.28,"8":56.1},"80":{"2":24.87,"3":28.78,"4":31.15,"5":37.65,"6":45.23,"7":53.0,"8":56.53},"81":{"2":25.49,"3":29.02,"4":31.9,"5":37.91,"6":45.82,"7":53.33,"8":56.73},"82":{"2":26.29,"3":29.72,"4":33.34,"5":38.84,"6":45.93,"7":54.7,"8":56.91},"83":{"2":26.31,"3":29.72,"4":33.34,"5":38.89,"6":46.07,"7":54.7,"8":57.11},"84":{"2":27.37,"3":30.91,"4":34.32,"5":39.26,"6":47.2,"7":55.35,"8":57.17},"85":{"2":28.09,"3":30.91,"4":34.34,"5":39.89,"6":47.49,"7":55.96,"8":57.79},"86":{"2":29.13,"3":32.63,"4":35.68,"5":40.63,"6":48.51,"7":57.53,"8":59.55},"87":{"2":29.72,"3":32.65,"4":35.7,"5":40.65,"6":49.15,"7":57.59,"8":59.65},"88":{"2":30.95,"3":33.37,"4":36.81,"5":41.95,"6":49.32,"7":57.64,"8":60.31},"89":{"2":32.34,"3":34.3,"4":37.53,"5":42.1,"6":50.39,"7":58.23,"8":61.58},"90":{"2":34.29,"3":35.79,"4":39.13,"5":43.33,"6":51.12,"7":59.59,"8":62.79},"91":{"2":34.3,"3":35.79,"4":39.13,"5":43.37,"6":51.16,"7":59.59,"8":62.79},"92":{"2":35.07,"3":36.1,"4":39.35,"5":43.7,"6":51.68,"7":59.6,"8":62.91},"93":{"2":35.54,"3":36.48,"4":40.13,"5":43.79,"6":51.79,"7":59.6,"8":62.99},"94":{"2":35.72,"3":37.43,"4":40.32,"5":44.36,"6":52.89,"7":59.62,"8":64.23},"95":{"2":36.21,"3":37.77,"4":40.58,"5":44.96,"6":53.04,"7":59.82,"8":64.92},"96":{"2":37.37,"3":38.03,"4":42.08,"5":45.45,"6":53.05,"7":59.83,"8":65.56},"97":{"2":38.6,"3":39.51,"4":42.68,"5":46.15,"6":54.14,"7":60.69,"8":66.87},"98":{"2":39.12,"3":39.77,"4":42.69,"5":46.68,"6":54.76,"7":60.69,"8":66.87},"99":{"2":39.96,"3":40.02,"4":43.89,"5":47.28,"6":54.88,"7":61.3,"8":67.54},"100":{"2":40.27,"3":40.68,"4":43.9,"5":47.56,"6":55.53,"7":61.35,"8":67.57}} ;
+const RATES_RESIDENTIAL = {"1":{"2":15.44,"3":15.44,"4":15.44,"5":15.44,"6":15.44,"7":15.44,"8":15.44},"2":{"2":15.44,"3":15.44,"4":15.44,"5":15.54,"6":16.02,"7":16.45,"8":16.67},"3":{"2":15.44,"3":15.44,"4":15.77,"5":16.36,"6":16.84,"7":17.27,"8":17.9},"4":{"2":15.44,"3":15.44,"4":16.25,"5":17.02,"6":17.37,"7":18.22,"8":18.88},"5":{"2":15.44,"3":15.47,"4":16.53,"5":17.59,"6":18.13,"7":18.86,"8":19.73},"6":{"2":15.44,"3":15.44,"4":16.26,"5":17.19,"6":17.67,"7":18.39,"8":19.23},"7":{"2":15.44,"3":15.44,"4":16.57,"5":17.6,"6":17.92,"7":18.78,"8":19.8},"8":{"2":15.44,"3":15.79,"4":17.0,"5":17.99,"6":18.47,"7":19.36,"8":20.47},"9":{"2":15.44,"3":15.94,"4":17.04,"5":18.12,"6":18.77,"7":19.98,"8":21.33},"10":{"2":15.44,"3":16.06,"4":17.17,"5":18.45,"6":18.93,"7":20.72,"8":22.45},"11":{"2":15.44,"3":15.81,"4":16.9,"5":18.0,"6":18.79,"7":21.35,"8":22.84},"12":{"2":15.53,"3":16.29,"4":17.02,"5":18.15,"6":19.29,"7":22.03,"8":23.68},"13":{"2":15.59,"3":16.34,"4":17.17,"5":18.43,"6":19.77,"7":23.19,"8":24.63},"14":{"2":15.99,"3":16.67,"4":17.29,"5":18.77,"6":20.67,"7":24.45,"8":26.29},"15":{"2":16.01,"3":16.94,"4":17.49,"5":19.27,"6":21.57,"7":25.09,"8":27.3},"16":{"2":16.29,"3":17.29,"4":17.71,"5":19.55,"6":22.12,"7":26.17,"8":28.31},"17":{"2":16.38,"3":17.56,"4":17.86,"5":19.96,"6":22.88,"7":27.29,"8":28.46},"18":{"2":16.51,"3":17.77,"4":18.01,"5":20.71,"6":23.85,"7":27.97,"8":30.35},"19":{"2":16.81,"3":18.36,"4":18.71,"5":21.43,"6":24.35,"7":28.62,"8":31.41},"20":{"2":16.91,"3":18.48,"4":18.78,"5":22.1,"6":25.04,"7":29.51,"8":32.58},"21":{"2":16.63,"3":18.21,"4":18.69,"5":21.31,"6":24.62,"7":28.94,"8":31.81},"22":{"2":16.68,"3":18.34,"4":19.09,"5":21.88,"6":25.44,"7":29.84,"8":33.01},"23":{"2":16.71,"3":18.61,"4":19.51,"5":22.21,"6":26.25,"7":30.45,"8":34.14},"24":{"2":17.05,"3":19.18,"4":20.19,"5":23.17,"6":27.28,"7":31.33,"8":35.86},"25":{"2":17.09,"3":19.24,"4":20.26,"5":23.4,"6":27.95,"7":32.82,"8":36.83},"26":{"2":17.71,"3":19.76,"4":20.92,"5":24.18,"6":28.81,"7":33.98,"8":38.17},"27":{"2":18.08,"3":20.12,"4":21.25,"5":24.51,"6":29.8,"7":34.53,"8":38.74},"28":{"2":18.4,"3":20.5,"4":22.04,"5":25.81,"6":31.03,"7":35.88,"8":40.06},"29":{"2":18.44,"3":20.8,"4":22.32,"5":25.85,"6":31.8,"7":36.6,"8":41.01},"30":{"2":18.67,"3":21.2,"4":23.0,"5":26.7,"6":32.24,"7":36.76,"8":42.54},"31":{"2":18.33,"3":20.57,"4":22.15,"5":25.51,"6":31.21,"7":35.96,"8":41.4},"32":{"2":18.34,"3":20.58,"4":22.15,"5":25.52,"6":31.35,"7":35.97,"8":41.8},"33":{"2":18.41,"3":20.81,"4":22.95,"5":26.52,"6":32.9,"7":37.0,"8":42.81},"34":{"2":18.5,"3":21.19,"4":23.55,"5":27.3,"6":33.06,"7":37.98,"8":44.66},"35":{"2":18.77,"3":22.08,"4":24.18,"5":27.85,"6":33.54,"7":38.85,"8":44.95},"36":{"2":18.98,"3":22.09,"4":24.33,"5":28.56,"6":34.77,"7":40.02,"8":46.54},"37":{"2":19.2,"3":22.32,"4":24.65,"5":29.08,"6":34.91,"7":41.18,"8":46.95},"38":{"2":19.43,"3":22.61,"4":25.19,"5":29.69,"6":35.6,"7":41.33,"8":47.75},"39":{"2":19.92,"3":23.31,"4":26.08,"5":30.33,"6":36.84,"7":42.79,"8":48.65},"40":{"2":19.93,"3":23.39,"4":26.1,"5":30.38,"6":37.06,"7":42.79,"8":48.65},"41":{"2":20.3,"3":24.21,"4":26.72,"5":31.27,"6":38.24,"7":43.98,"8":50.33},"42":{"2":20.31,"3":24.28,"4":27.59,"5":31.35,"6":38.57,"7":44.65,"8":50.57},"43":{"2":20.6,"3":24.56,"4":27.62,"5":32.71,"6":40.23,"7":46.11,"8":51.81},"44":{"2":20.83,"3":24.87,"4":28.23,"5":33.23,"6":40.54,"7":47.18,"8":52.3},"45":{"2":20.85,"3":24.87,"4":28.24,"5":33.24,"6":40.65,"7":48.25,"8":52.65},"46":{"2":21.38,"3":25.09,"4":29.0,"5":33.94,"6":41.6,"7":48.72,"8":53.93},"47":{"2":21.44,"3":25.56,"4":29.39,"5":34.16,"6":42.11,"7":49.59,"8":54.73},"48":{"2":21.45,"3":25.7,"4":29.63,"5":35.07,"6":42.68,"7":50.0,"8":55.53},"49":{"2":21.46,"3":25.72,"4":29.7,"5":35.08,"6":42.97,"7":50.92,"8":55.84},"50":{"2":21.47,"3":25.73,"4":29.7,"5":35.11,"6":42.98,"7":50.92,"8":56.11},"51":{"2":21.51,"3":25.72,"4":29.77,"5":35.17,"6":43.18,"7":51.16,"8":56.93},"52":{"2":21.52,"3":25.75,"4":29.79,"5":35.18,"6":43.18,"7":51.17,"8":56.94},"53":{"2":21.53,"3":25.78,"4":29.8,"5":35.37,"6":43.18,"7":51.17,"8":57.44},"54":{"2":21.54,"3":25.83,"4":29.83,"5":35.42,"6":43.19,"7":51.18,"8":57.48},"55":{"2":21.54,"3":25.85,"4":29.84,"5":35.57,"6":43.23,"7":51.19,"8":57.53},"56":{"2":21.55,"3":25.88,"4":29.89,"5":35.59,"6":43.25,"7":51.24,"8":58.12},"57":{"2":21.86,"3":25.97,"4":29.92,"5":36.52,"6":43.3,"7":51.27,"8":58.66},"58":{"2":21.87,"3":25.97,"4":29.93,"5":36.55,"6":43.3,"7":51.3,"8":59.14},"59":{"2":21.91,"3":25.98,"4":30.11,"5":36.55,"6":43.49,"7":51.35,"8":60.06},"60":{"2":22.36,"3":26.83,"4":30.55,"5":37.69,"6":44.23,"7":51.39,"8":60.4},"61":{"2":22.37,"3":26.9,"4":30.77,"5":37.79,"6":44.24,"7":51.39,"8":60.75},"62":{"2":23.11,"3":28.5,"4":31.24,"5":38.73,"6":44.86,"7":52.12,"8":61.09},"63":{"2":23.12,"3":28.49,"4":31.49,"5":38.75,"6":45.12,"7":52.51,"8":61.45},"64":{"2":23.62,"3":28.51,"4":31.93,"5":38.76,"6":45.42,"7":52.53,"8":61.78},"65":{"2":23.83,"3":29.16,"4":31.94,"5":38.8,"6":45.76,"7":52.65,"8":61.89},"66":{"2":23.93,"3":29.4,"4":31.96,"5":38.81,"6":45.8,"7":52.79,"8":62.13},"67":{"2":23.94,"3":29.44,"4":31.97,"5":38.87,"6":46.13,"7":53.02,"8":62.7},"68":{"2":24.16,"3":29.89,"4":33.63,"5":39.59,"6":46.75,"7":53.76,"8":62.73},"69":{"2":24.56,"3":30.13,"4":33.85,"5":39.88,"6":46.96,"7":53.8,"8":62.99},"70":{"2":24.65,"3":30.48,"4":34.47,"5":41.39,"6":47.83,"7":53.85,"8":63.48},"71":{"2":24.72,"3":30.53,"4":35.0,"5":41.58,"6":48.19,"7":54.67,"8":63.6},"72":{"2":25.29,"3":30.54,"4":35.65,"5":41.59,"6":48.91,"7":56.82,"8":63.7},"73":{"2":25.42,"3":30.79,"4":35.66,"5":42.14,"6":49.35,"7":56.85,"8":63.71},"74":{"2":25.97,"3":30.8,"4":35.67,"5":42.15,"6":50.08,"7":56.9,"8":63.71},"75":{"2":26.79,"3":30.82,"4":35.67,"5":42.48,"6":50.09,"7":57.44,"8":63.71},"76":{"2":28.52,"3":32.31,"4":35.87,"5":43.08,"6":51.11,"7":58.31,"8":64.31},"77":{"2":29.48,"3":32.71,"4":36.25,"5":43.24,"6":51.37,"7":59.85,"8":64.34},"78":{"2":29.5,"3":33.78,"4":37.19,"5":43.66,"6":51.67,"7":60.26,"8":64.35},"79":{"2":30.64,"3":34.99,"4":37.98,"5":44.28,"6":52.65,"7":61.13,"8":65.27},"80":{"2":31.35,"3":35.6,"4":38.17,"5":45.23,"6":53.46,"7":61.9,"8":65.73},"81":{"2":32.02,"3":35.86,"4":38.98,"5":45.5,"6":54.1,"7":62.26,"8":65.95},"82":{"2":32.9,"3":36.62,"4":40.55,"5":46.51,"6":54.22,"7":63.76,"8":66.17},"83":{"2":32.91,"3":36.63,"4":40.56,"5":46.57,"6":54.38,"7":63.76,"8":66.36},"84":{"2":34.06,"3":37.91,"4":41.6,"5":46.97,"6":55.61,"7":64.47,"8":66.43},"85":{"2":34.86,"3":37.91,"4":41.64,"5":47.65,"6":55.91,"7":65.12,"8":67.11},"86":{"2":35.97,"3":39.77,"4":43.1,"5":48.48,"6":57.02,"7":66.83,"8":69.03},"87":{"2":36.62,"3":39.79,"4":43.11,"5":48.49,"6":57.72,"7":66.88,"8":69.12},"88":{"2":37.95,"3":40.59,"4":44.32,"5":49.91,"6":57.92,"7":66.95,"8":69.84},"89":{"2":39.46,"3":41.6,"4":45.11,"5":50.06,"6":59.07,"7":67.6,"8":71.21},"90":{"2":41.58,"3":43.21,"4":46.83,"5":51.4,"6":59.86,"7":69.06,"8":72.52},"91":{"2":41.59,"3":43.22,"4":46.84,"5":51.45,"6":59.91,"7":69.07,"8":72.53},"92":{"2":42.42,"3":43.55,"4":47.07,"5":51.8,"6":60.47,"7":69.06,"8":72.66},"93":{"2":42.94,"3":43.96,"4":47.92,"5":51.9,"6":60.59,"7":69.07,"8":72.74},"94":{"2":43.13,"3":45.0,"4":48.13,"5":52.51,"6":61.78,"7":69.09,"8":74.11},"95":{"2":43.67,"3":45.38,"4":48.41,"5":53.17,"6":61.94,"7":69.32,"8":74.86},"96":{"2":44.92,"3":45.63,"4":50.04,"5":53.7,"6":61.95,"7":69.32,"8":75.55},"97":{"2":46.26,"3":47.26,"4":50.7,"5":54.45,"6":63.15,"7":70.26,"8":76.96},"98":{"2":46.82,"3":47.52,"4":50.7,"5":55.04,"6":63.81,"7":70.27,"8":76.97},"99":{"2":47.74,"3":47.8,"4":52.0,"5":55.68,"6":63.94,"7":70.92,"8":77.7},"100":{"2":48.09,"3":48.52,"4":52.01,"5":56.0,"6":64.65,"7":70.96,"8":77.74}} ;
+
+/* ─── ZONE/MAP CONFIG ─── */
+const ZONE_COLORS={2:'#2563EB',3:'#16A34A',4:'#D97706',5:'#EA580C',6:'#DC2626',7:'#7C3AED',8:'#0891B2'};
+const ZONE_REGION={2:'CA 인접 (OR, NV)',3:'서부권 (WA, AZ, ID, UT)',4:'로키 산맥 (MT, CO, NM...)',5:'중부 (TX, MN, MO...)',6:'중동부 (IL, OH, MI...)',7:'동부 전역 (NY, FL, GA...)',8:'알래스카·하와이'};
+const ZONE_MAP={
+  'California':'origin','Oregon':2,'Nevada':2,
+  'Washington':3,'Arizona':3,'Idaho':3,'Utah':3,
+  'Montana':4,'Wyoming':4,'Colorado':4,'New Mexico':4,
+  'North Dakota':5,'South Dakota':5,'Nebraska':5,'Kansas':5,'Oklahoma':5,'Texas':5,'Minnesota':5,'Iowa':5,'Missouri':5,'Arkansas':5,'Louisiana':5,'Wisconsin':5,
+  'Illinois':6,'Michigan':6,'Indiana':6,'Ohio':6,'Mississippi':6,'Tennessee':6,'Kentucky':6,'Alabama':6,
+  'Georgia':7,'Florida':7,'South Carolina':7,'North Carolina':7,'Virginia':7,'West Virginia':7,'Pennsylvania':7,'New York':7,'New Jersey':7,'Delaware':7,'Maryland':7,'Connecticut':7,'Rhode Island':7,'Massachusetts':7,'Vermont':7,'New Hampshire':7,'Maine':7,
+  'Alaska':8,'Hawaii':8
 };
 
-const zoneInfo = {
-  2: { color: '#3B82F6', label: 'Zone 2', region: 'CA 인접 (OR, NV)' },
-  3: { color: '#22C55E', label: 'Zone 3', region: '서부권 (WA, AZ, ID, UT)' },
-  4: { color: '#EAB308', label: 'Zone 4', region: '로키 산맥 (MT, CO, NM...)' },
-  5: { color: '#F97316', label: 'Zone 5', region: '중부 (TX, MN, MO...)' },
-  6: { color: '#EF4444', label: 'Zone 6', region: '중동부 (IL, OH, MI...)' },
-  7: { color: '#8B5CF6', label: 'Zone 7', region: '동부 전역 (NY, FL, GA...)' },
-};
+/* ─── SERVICE STATE ─── */
+let currentSvc = 'residential';
+function setSvc(s) {
+  currentSvc = s;
+  document.getElementById('btn-resi').classList.toggle('active', s==='residential');
+  document.getElementById('btn-comm').classList.toggle('active', s==='commercial');
+  document.getElementById('svc-info').textContent = s==='residential' ? 'Ground Residential' : 'Ground Commercial';
+  render();
+}
+setSvc('residential');
 
-// Build legend
-const legendEl = document.getElementById('legend');
-// CA origin item
-const caItem = document.createElement('div');
-caItem.className = 'zone-item';
-caItem.innerHTML = `<span class="zone-swatch" style="background:#1E3A8A;box-shadow:0 0 6px rgba(59,130,246,0.5)"></span>
-  <span class="zone-number">출발지</span>
-  <span class="zone-desc">California</span>`;
-legendEl.appendChild(caItem);
-
-Object.entries(zoneInfo).forEach(([z, info]) => {
-  const item = document.createElement('div');
-  item.className = 'zone-item';
-  item.id = `legend-z${z}`;
-  item.innerHTML = `<span class="zone-swatch" style="background:${info.color}"></span>
-    <span class="zone-number">${info.label}</span>
-    <span class="zone-desc">${info.region}</span>`;
-  item.addEventListener('click', () => highlightZone(parseInt(z)));
-  legendEl.appendChild(item);
-});
-
-const tooltip = document.getElementById('tooltip');
-let activeZone = null;
-
-function highlightZone(zone) {
-  if (activeZone === zone) {
-    activeZone = null;
-    d3.selectAll('path.state').attr('opacity', 1);
-    document.querySelectorAll('.zone-item').forEach(el => el.classList.remove('active'));
-  } else {
-    activeZone = zone;
-    d3.selectAll('path.state').attr('opacity', d => {
-      const v = zoneData[d.properties.name];
-      return v === zone ? 1 : 0.2;
-    });
-    document.querySelectorAll('.zone-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(`legend-z${zone}`)?.classList.add('active');
-  }
+/* ─── RATE LOOKUP ─── */
+function getRate(w, z) {
+  w = parseInt(w); z = parseInt(z);
+  if (!w || !z) return null;
+  const clamp = Math.min(Math.max(w, 1), 100);
+  // find nearest weight key (exact or round up per UPS rules)
+  const tbl = currentSvc === 'residential' ? RATES_RESIDENTIAL : RATES_COMMERCIAL;
+  // UPS: any fraction over shown weight takes next higher rate → ceil then find key
+  let key = clamp;
+  while (key <= 100 && !tbl[String(key)]) key++;
+  if (!tbl[String(key)]) return null;
+  return tbl[String(key)][String(z)] ?? null;
 }
 
-d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => {
-  document.getElementById('map').innerHTML = '';
+/* ─── ROWS ─── */
+let uid = 0;
+const rows = [];
+function addRow(w='',z='',qty=1,desc='') { rows.push({id:++uid,w,z,qty,desc}); render(); }
+function removeRow(id) { rows.splice(rows.findIndex(r=>r.id===id),1); render(); }
+function setField(id,f,v) { const r=rows.find(r=>r.id===id); if(r)r[f]=v; render(); }
 
-  const container = document.getElementById('map');
-  const svg = d3.select('#map').append('svg')
-    .attr('viewBox', '0 0 960 600')
-    .attr('width', '100%');
-
-  // Subtle glow defs
-  const defs = svg.append('defs');
-  const filter = defs.append('filter').attr('id', 'glow').attr('x', '-20%').attr('y', '-20%').attr('width', '140%').attr('height', '140%');
-  filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'blur');
-  const feMerge = filter.append('feMerge');
-  feMerge.append('feMergeNode').attr('in', 'blur');
-  feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
-
-  const projection = d3.geoAlbersUsa().scale(1160).translate([480, 295]);
-  const path = d3.geoPath(projection);
-  const features = topojson.feature(us, us.objects.states).features;
-
-  function getFill(name) {
-    if (name === 'California') return '#1E3A8A';
-    const z = zoneData[name];
-    if (!z || z === 'origin') return '#1F2937';
-    return zoneInfo[z]?.color || '#1F2937';
+function render() {
+  const tb = document.getElementById('calc-body');
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="8" class="empty-row">행 추가 버튼을 눌러 항목을 입력하세요</td></tr>`;
+    updateTotal(); return;
   }
+  const ZONES = [2,3,4,5,6,7,8];
+  tb.innerHTML = rows.map((r,i) => {
+    const rate = getRate(r.w, r.z);
+    const qty = Math.max(1, parseInt(r.qty)||1);
+    const sub = rate != null ? rate * qty : null;
+    const wOpts = `<option value="">-- 선택</option>` +
+      Array.from({length:100},(_,i)=>i+1).map(w=>`<option value="${w}"${r.w==w?' selected':''}>${w} lbs</option>`).join('');
+    const zOpts = `<option value="">-- 선택</option>` +
+      ZONES.map(z=>`<option value="${z}"${r.z==z?' selected':''}>Zone ${z} · ${ZONE_REGION[z]}</option>`).join('');
+    return `<tr>
+      <td class="cn" style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--text3)">${i+1}</td>
+      <td class="cd"><input class="ti" type="text" placeholder="품목명" value="${r.desc||''}" oninput="setField(${r.id},'desc',this.value)" style="min-width:110px"></td>
+      <td class="cw"><select class="ts" onchange="setField(${r.id},'w',this.value)">${wOpts}</select></td>
+      <td class="cz"><select class="ts" onchange="setField(${r.id},'z',this.value)">${zOpts}</select></td>
+      <td class="cq"><input class="ti" type="number" min="1" step="1" value="${r.qty||1}" oninput="setField(${r.id},'qty',this.value)" style="text-align:center"></td>
+      <td class="cr"><div class="rate-d${rate==null?' rate-na':''}">${rate!=null?'$'+rate.toFixed(2):'—'}</div></td>
+      <td class="cs"><div class="sub-d" style="color:${sub!=null?'var(--text)':'var(--text3)'}">${sub!=null?'$'+sub.toFixed(2):'—'}</div></td>
+      <td class="cx"><button class="del-btn" onclick="removeRow(${r.id})" title="삭제"><svg viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg></button></td>
+    </tr>`;
+  }).join('');
+  updateTotal();
+}
 
-  svg.selectAll('path.state')
-    .data(features)
-    .join('path')
-    .attr('class', 'state')
-    .attr('d', path)
-    .attr('fill', d => getFill(d.properties.name))
-    .attr('fill-opacity', d => d.properties.name === 'California' ? 1 : 0.75)
-    .attr('stroke', '#0A0F1A')
-    .attr('stroke-width', 0.8)
-    .style('cursor', 'pointer')
-    .style('transition', 'fill-opacity 0.2s, opacity 0.2s')
-    .on('mousemove', function(event, d) {
-      const name = d.properties.name;
-      const z = zoneData[name];
+function updateTotal() {
+  let total=0, boxes=0;
+  rows.forEach(r=>{ const rate=getRate(r.w,r.z),qty=Math.max(1,parseInt(r.qty)||1); if(rate!=null){total+=rate*qty;boxes+=qty;} });
+  document.getElementById('grand-total').textContent='$'+total.toFixed(2);
+  document.getElementById('total-meta').textContent=rows.length?`${rows.length}개 품목 · ${boxes}박스`:'0개 항목';
+}
+addRow('','',1,'');
 
-      d3.select(this).attr('fill-opacity', 1);
+/* ─── LEGEND ─── */
+const legendEl = document.getElementById('legend');
+const caEl = document.createElement('div');
+caEl.className='zone-item';
+caEl.innerHTML=`<span class="zone-swatch" style="background:#1D4ED8"></span><span class="zone-lbl" style="color:#1D4ED8">출발지</span><span class="zone-desc">California</span>`;
+legendEl.appendChild(caEl);
+[2,3,4,5,6,7,8].forEach(z=>{
+  const el=document.createElement('div');
+  el.className='zone-item'; el.id=`leg-z${z}`;
+  el.innerHTML=`<span class="zone-swatch" style="background:${ZONE_COLORS[z]}"></span><span class="zone-lbl">Zone ${z}</span><span class="zone-desc">${ZONE_REGION[z]}</span>`;
+  el.addEventListener('click',()=>highlightZone(z));
+  legendEl.appendChild(el);
+});
 
-      tooltip.style.display = 'block';
-      const tx = event.clientX + 14;
-      const ty = event.clientY - 10;
-      tooltip.style.left = Math.min(tx, window.innerWidth - 180) + 'px';
-      tooltip.style.top = Math.max(ty, 10) + 'px';
+let activeZ=null;
+const tip=document.getElementById('tt');
+function highlightZone(z){
+  if(activeZ===z){activeZ=null;d3.selectAll('path.st').attr('fill-opacity',d=>d.properties.name==='California'?1:.78);document.querySelectorAll('.zone-item').forEach(e=>e.classList.remove('active'));}
+  else{activeZ=z;d3.selectAll('path.st').attr('fill-opacity',d=>{if(d.properties.name==='California')return 1;return ZONE_MAP[d.properties.name]===z?1:.15;});document.querySelectorAll('.zone-item').forEach(e=>e.classList.remove('active'));document.getElementById(`leg-z${z}`)?.classList.add('active');}
+}
 
-      document.getElementById('tt-state').textContent = name;
-
-      if (name === 'California') {
-        document.getElementById('tt-dot').style.background = '#3B82F6';
-        document.getElementById('tt-zone-text').textContent = '출발지 (Origin)';
-      } else if (z && zoneInfo[z]) {
-        document.getElementById('tt-dot').style.background = zoneInfo[z].color;
-        document.getElementById('tt-zone-text').textContent = `Zone ${z} · ${zoneInfo[z].region}`;
-      } else {
-        document.getElementById('tt-dot').style.background = '#4B5563';
-        document.getElementById('tt-zone-text').textContent = 'Zone 정보 없음';
-      }
+/* ─── MAP ─── */
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us=>{
+  document.getElementById('map').innerHTML='';
+  const svg=d3.select('#map').append('svg').attr('viewBox','0 0 960 580').attr('width','100%');
+  const proj=d3.geoAlbersUsa().scale(1160).translate([480,290]);
+  const path=d3.geoPath(proj);
+  const feats=topojson.feature(us,us.objects.states).features;
+  svg.selectAll('path.st').data(feats).join('path').attr('class','st')
+    .attr('d',path)
+    .attr('fill',d=>{const n=d.properties.name;if(n==='California')return'#1D4ED8';const z=ZONE_MAP[n];return(z&&z!=='origin')?ZONE_COLORS[z]:'#E5E3DC';})
+    .attr('fill-opacity',d=>d.properties.name==='California'?1:.78)
+    .attr('stroke','#FFFFFF').attr('stroke-width',.9)
+    .style('cursor','pointer').style('transition','fill-opacity .18s')
+    .on('mousemove',function(ev,d){
+      const n=d.properties.name,z=ZONE_MAP[n];
+      d3.select(this).attr('fill-opacity',1);
+      tip.style.display='block';
+      tip.style.left=Math.min(ev.clientX+14,window.innerWidth-170)+'px';
+      tip.style.top=Math.max(ev.clientY-12,8)+'px';
+      document.getElementById('tt-state').textContent=n;
+      if(n==='California'){document.getElementById('tt-dot').style.background='#1D4ED8';document.getElementById('tt-zt').textContent='출발지 (Origin)';}
+      else if(z&&ZONE_COLORS[z]){document.getElementById('tt-dot').style.background=ZONE_COLORS[z];document.getElementById('tt-zt').textContent=`Zone ${z} · ${ZONE_REGION[z]}`;}
+      else{document.getElementById('tt-dot').style.background='#9A9892';document.getElementById('tt-zt').textContent='Zone 정보 없음';}
     })
-    .on('mouseleave', function(event, d) {
-      const name = d.properties.name;
-      const opacity = activeZone
-        ? (zoneData[name] === activeZone ? 1 : 0.2)
-        : (name === 'California' ? 1 : 0.75);
-      d3.select(this).attr('fill-opacity', opacity);
-      tooltip.style.display = 'none';
+    .on('mouseleave',function(ev,d){
+      const n=d.properties.name;
+      d3.select(this).attr('fill-opacity',activeZ?(ZONE_MAP[n]===activeZ?1:.15):(n==='California'?1:.78));
+      tip.style.display='none';
     })
-    .on('click', function(event, d) {
-      const name = d.properties.name;
-      const z = zoneData[name];
-      const card = document.getElementById('selected-card');
-
-      if (name === 'California') {
-        document.getElementById('sel-name').textContent = 'California';
-        document.getElementById('sel-zone').textContent = '출발지';
-        document.getElementById('sel-region').textContent = 'Origin';
-      } else if (z && zoneInfo[z]) {
-        document.getElementById('sel-name').textContent = name;
-        document.getElementById('sel-zone').textContent = `Zone ${z}`;
-        document.getElementById('sel-region').textContent = zoneInfo[z].region;
-      } else {
-        document.getElementById('sel-name').textContent = name;
-        document.getElementById('sel-zone').textContent = '—';
-        document.getElementById('sel-region').textContent = '—';
-      }
-      card.style.display = 'block';
+    .on('click',function(ev,d){
+      const n=d.properties.name,z=ZONE_MAP[n];
+      document.getElementById('sel-card').style.display='block';
+      document.getElementById('sel-name').textContent=n;
+      if(n==='California'){document.getElementById('sel-zone').textContent='출발지';document.getElementById('sel-region').textContent='Origin';}
+      else if(z&&ZONE_REGION[z]){document.getElementById('sel-zone').textContent=`Zone ${z}`;document.getElementById('sel-region').textContent=ZONE_REGION[z];}
+      else{document.getElementById('sel-zone').textContent='—';document.getElementById('sel-region').textContent='—';}
     });
-
-  // State labels (zone numbers)
-  features.forEach(f => {
-    const name = f.properties.name;
-    const z = zoneData[name];
-    const [cx, cy] = path.centroid(f);
-    if (!cx || !cy || isNaN(cx) || isNaN(cy)) return;
-
-    if (name === 'California') {
-      svg.append('text')
-        .attr('x', cx).attr('y', cy - 6)
-        .attr('text-anchor', 'middle')
-        .attr('font-family', 'DM Mono, monospace')
-        .attr('font-size', '11px').attr('font-weight', '500')
-        .attr('fill', 'rgba(255,255,255,0.9)').attr('pointer-events', 'none')
-        .text('CA');
-      svg.append('text')
-        .attr('x', cx).attr('y', cy + 8)
-        .attr('text-anchor', 'middle')
-        .attr('font-family', 'Gowun Dodum, sans-serif')
-        .attr('font-size', '9px')
-        .attr('fill', 'rgba(147,197,253,0.8)').attr('pointer-events', 'none')
-        .text('출발지');
-    } else if (z && z !== 'origin') {
-      svg.append('text')
-        .attr('x', cx).attr('y', cy + 4)
-        .attr('text-anchor', 'middle')
-        .attr('font-family', 'DM Mono, monospace')
-        .attr('font-size', '10px').attr('font-weight', '400')
-        .attr('fill', 'rgba(255,255,255,0.5)').attr('pointer-events', 'none')
-        .text(z);
+  feats.forEach(f=>{
+    const n=f.properties.name,z=ZONE_MAP[n];
+    const[cx,cy]=path.centroid(f);
+    if(!cx||!cy||isNaN(cx)||isNaN(cy))return;
+    if(n==='California'){
+      svg.append('text').attr('x',cx).attr('y',cy-4).attr('text-anchor','middle').attr('font-family','Pretendard,sans-serif').attr('font-size','10.5').attr('font-weight','700').attr('fill','rgba(255,255,255,.95)').attr('pointer-events','none').text('CA');
+      svg.append('text').attr('x',cx).attr('y',cy+8).attr('text-anchor','middle').attr('font-family','Pretendard,sans-serif').attr('font-size','8.5').attr('fill','rgba(255,255,255,.75)').attr('pointer-events','none').text('출발지');
+    } else if(z&&z!=='origin'){
+      svg.append('text').attr('x',cx).attr('y',cy+4).attr('text-anchor','middle').attr('font-family','DM Mono,monospace').attr('font-size','9').attr('font-weight','500').attr('fill','rgba(255,255,255,.72)').attr('pointer-events','none').text(z);
     }
   });
-
-}).catch(() => {
-  document.getElementById('map').innerHTML =
-    '<div class="map-loading">지도 데이터를 불러올 수 없습니다. 인터넷 연결을 확인해주세요.</div>';
-});
+}).catch(()=>{document.getElementById('map').innerHTML='<div class="map-loading">지도를 불러올 수 없습니다.</div>';});
 </script>
 </body>
 </html>
